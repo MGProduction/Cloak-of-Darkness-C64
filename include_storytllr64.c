@@ -28,7 +28,7 @@
 // -----------------------------
 // game data, built by the script compiler
 // -----------------------------
-#include "storytllr64.h"
+#include "storytllr64_data.h"
 
 #define FAKE_CARRIAGECR 31
 #define ESCAPE_CHAR     92
