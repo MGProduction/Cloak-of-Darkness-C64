@@ -23,7 +23,7 @@ verb:about
 		This C64 implementation has been created by \yMarco Giorgini
 
 obj:cloak
-	name:a black velvet cloak
+	name:a \yblack velvet cloak
 	attr:takeable+visible
 	desc:It is a handsome cloak, of velvet trimmed with satin, and slightly
 		spattered with raindrops. Its blackness is so deep that it almost 
@@ -36,7 +36,7 @@ obj:cloak
 			putobj:$this,$inventory
 			ifobj:$this,hung
 				unsetobj:$this,hung			
-			setroomimage:cloakroom,png\cloakroom.png	
+			setroomimage:cloakroom,png\cloakroom_C64.png
 			msg:Taken
 	verb:drop|put_down
 		ifisroom:dark_bar
@@ -46,7 +46,7 @@ obj:cloak
 				ifisroom:cloakroom
 					putobj:cloak,cloakroom
 					setvar:$score,1
-					setroomimage:cloakroom,png\cloakroom3.png
+					setroomimage:cloakroom,png\cloakroom3_C64.png
 					msg:You drop you cloak on the floor
 				else
 					msg:This isn't the best place to leave a smart cloak lying around.
@@ -61,7 +61,7 @@ obj:cloak
 					putobj:cloak,cloakroom
 					setobj:cloak,hung
 					setvar:$score,2
-					setroomimage:cloakroom,png\cloakroom2.png
+					setroomimage:cloakroom,png\cloakroom2_C64.png
 					msg:You hang the cloak on the hook.
 				else
 					ifobj:cloak,hung
@@ -73,7 +73,7 @@ obj:cloak
 		
 	
 room:foyer
-	image:png\foyer.png
+	image:png\foyer_C64.png
 	name:Foyer of the Opera House
 	desc:You are standing in a spacious hall, splendidly decorated in red and
 		gold, with glittering chandeliers overhead. The entrance from the
@@ -96,7 +96,7 @@ room:foyer
 			be getting worse.
 			
 room:cloakroom
-	image:png\cloakroom.png
+	image:png\cloakroom_C64.png
 	name:Cloakroom
 	desc:The walls of this small room were clearly once lined with hooks,
 		though now only one remains. The exit is a door to the \yeast\w.		
@@ -110,7 +110,7 @@ room:cloakroom
 	scenary:hooks		
 		desc:There's only one of them.
 	scenaryobj:hook|peg
-		name:small brass hook		
+		name:a \ysmall brass hook		
 		verb:examine				
 			msg:It's just a small brass hook +
 			ifobj:cloak,hung
@@ -119,7 +119,7 @@ room:cloakroom
 				msg:screwed to the wall.
 
 room:bar
-	image:png\foyerbar.png
+	image:png\foyerbar_C64.png
 	name:Foyer Bar
 	desc:The bar, much rougher than you'd have guessed after the opulence of
 		the foyer to the north, is completely empty. There seems to be some
@@ -127,7 +127,7 @@ room:bar
 	verb:n
 		goto:foyer
 	scenaryobj:message|floor|sawdust
-		name:scrawled message		
+		name:a \yscrawled message		
 		verb:examine
 		verb:read
 			ifvar:damage_number,<,2
@@ -187,7 +187,7 @@ room:dark_bar
 		addvar:damage_number,1
 
 room:$start
-	image:png\cloakofdarkness.png
+	image:png\cloakofdarkness_C64.png
 	onfirst
 		msg:Hurrying through the rainswept November night, you're glad to see
 			the bright lights of the Opera House.

@@ -162,24 +162,29 @@ void draw_roomobj()
   if(objloc[i]==varroom)
    if((objattr[i]&varattr)==varattr)
     {     
-     str=advnames;
      strid=objnameid[i];
-     _getstring();
-     j=0;
-     k=0;
-     if(c)
-      {
-       txt[k++]=',';
-       txt[k++]=' ';
+     if(strid==255)
+      ;
+     else
+      { 
+       str=advnames;     
+       _getstring();
+       j=0;
+       k=0;
+       if(c)
+        {
+         txt[k++]=',';
+         txt[k++]=' ';
+        }
+       while(ostr[j])
+        txt[k++]=ostr[j++];
+       txt[k]=0;
+       txt_col=COLOR_WHITE;
+       core_drawtext();
+       // tmp2[k++]=ESCAPE_CHAR;     
+       // tmp2[k++]='w'-'a'+1;
+       c++;
       }
-     while(ostr[j])
-      txt[k++]=ostr[j++];
-     txt[k]=0;
-     txt_col=COLOR_WHITE;
-     core_drawtext();
-     // tmp2[k++]=ESCAPE_CHAR;     
-     // tmp2[k++]='w'-'a'+1;
-     c++;
     }
  if(c==0)
  {
@@ -320,6 +325,12 @@ void adv_exec()
         }
       }
      break;
+     case op_setroomoverlayimage:
+      _getroom();
+      var=pcode[i++];
+      //roomimg[varroom]=var;
+      os_roomimage_load();
+     break;
      case op_setroomimage:
       _getroom();
       var=pcode[i++];
@@ -403,10 +414,13 @@ void adv_exec()
            {
             ch=0;
             while(ch<obj_count)
-             if((objloc[ch]==varroom)&&((objattr[ch]&varattr)==varattr))
-              break;
-             else
+             if(objnameid[ch]==255)
               ch++;
+             else
+              if((objloc[ch]==varroom)&&((objattr[ch]&varattr)==varattr))
+               break;
+              else              
+               ch++;
             if(ch==obj_count)
              fail=3;
            }

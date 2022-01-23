@@ -65,8 +65,8 @@ u8  m_bitmap_h,m_bitmap_oy;
 u8*buf_bitmap;
 u8*buf_bitmapcol;
 u8*buf_bitmapscrcol;
-u16 buf_w;
-u8  buf_h;
+u16 buf_w,buf_ox;
+u8  buf_h,buf_oy;
 #if defined(WIN32)
 char*FILENAME(char*nm)
 {
@@ -99,6 +99,7 @@ u8 video_scroll_x,video_scroll_y;
 #endif
 
 
+
 // ---------------------------------------------------------------
 
 void os_roomimage_load()
@@ -120,13 +121,16 @@ void os_roomimage_load()
   fp = fopen(FILENAME(nm), "rb");  
   if(fp)
    {
-    u16 w,h,psize;  
-    u8 b;
+    u16 w,ox,psize;
+    u8  h,oy;  
+    u8  b;
     
     fread(&b,sizeof(b),1,fp);
     
     fread(&w,sizeof(w),1,fp);
-    fread(&h,sizeof(w),1,fp);
+    fread(&h,sizeof(h),1,fp);
+    fread(&ox,sizeof(ox),1,fp);
+    fread(&oy,sizeof(oy),1,fp);
     
     fread(&b,sizeof(b),1,fp);
        
@@ -145,7 +149,9 @@ void os_roomimage_load()
     fclose(fp);
     
     buf_w=w;
-    buf_h=(u8)h;
+    buf_h=h;
+    buf_ox=ox;
+    buf_oy=oy;
    }     
   }
 #endif

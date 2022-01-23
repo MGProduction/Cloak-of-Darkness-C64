@@ -348,151 +348,48 @@ void IMAGE_clear()
  ui_clear();
 }
 
-void IMAGE_load()
+u8*t1,*t2,*t3,*ot1,*ot2,*ot3;
+u16 wC,oxC,oxB;
+
+void ui_image_draw()
 { 
- //u8*t;
-
- if((m_bitmap_w==320)&&(m_bitmap_h==96))
- {
-  memcpy(video_colorram,m_bitmapcol,12*40);
-  memcpy(VIDEOMEM,m_bitmapscrcol,12*40);
-  memcpy(bitmap_image,m_bitmap,96*40);
-  /*
-  else
-   { 
-    unpack((u8*)m_bitmapcol,video_colorram);    
-    
-    unpack((u8*)m_bitmapscrcol,VIDEOMEM);    
-    
-    unpack((u8*)m_bitmap,bitmap_image);
-   } 
-  */  
-  /*{
-   u8 bBUF[64000];
-   u8 ret,*s,*d;
-   int i,err=0;
-   FILE*f=fopen("c:\\git\\due.vsf","rb");
-   ret=fread(bBUF,1,0x84,f);
-   ret=fread(bBUF,1,64*1024,f);
-   s=VIDEOMEM;
-   d=bBUF+(VIDEOMEM-bMEM);
-   for(i=0;i<96/8*40;i++)
-    if(s[i]!=d[i])
-     err++;
-   s=video_colorram;
-   d=bBUF+(video_colorram-bMEM);
-   for(i=0;i<96/8*40;i++)
-    if(s[i]!=d[i])
-     err++;
-   s=bitmap_image;
-   d=bBUF+(bitmap_image-bMEM);
-   for(i=0;i<96*40;i++)
-    if(s[i]!=d[i])
-     err++;  
-   ret=memcmp(VIDEOMEM,bBUF+(VIDEOMEM-bMEM),96/8*40);
-   ret=memcmp(video_colorram,bBUF+(video_colorram-bMEM),96/8*40);
-   ret=memcmp(bitmap_image,bBUF+(bitmap_image-bMEM),96*40);
-   fclose(f);
-  }*/
-  REFRESH
- }
+ if(m_bitmap_ox||m_bitmap_oy)
+  oxB=m_bitmap_ox+(m_bitmap_oy>>3)*320;
  else
-  { 
-   /*
-   unpack((u8*)m_bitmap,temp);
-   ttemp=temp;tbitmap_image=bitmap_image;
-   if(m_bitmap_ox==255)
-    tbitmap_image+=(320-m_bitmap_w)/2;
-   else
-    tbitmap_image+=m_bitmap_ox;
-   if(m_bitmap_oy==255)
-    tbitmap_image+=(96-m_bitmap_h)/2*320;
-   else
-   {
-    tbitmap_image+=(m_bitmap_oy*320)/8;
-    t=tbitmap_image-320+7;
-    x=0;
-    while(x<m_bitmap_w)
-    {
-     *t=0;t+=8;
-     x+=8;
-    }
-    t=tbitmap_image+m_bitmap_h*320/8;
-    x=0;
-    while(x<m_bitmap_w)
-    {
-     *t=0;t+=8;
-     x+=8;
-    }
-   }
-   ww=m_bitmap_w;
-   for(y=0;y<m_bitmap_h/8;y++)
-    {   
-     memcpy(tbitmap_image,ttemp,ww);
-     ttemp+=ww;   
-     tbitmap_image-=8;
-     x=8;
-     while(x--)
-     {*tbitmap_image&=0xfc;tbitmap_image++;   }     
-     tbitmap_image+=ww; 
-     x=8;
-     while(x--)
-     {*tbitmap_image&=0x3f;tbitmap_image++;   }     
-     tbitmap_image+=320-ww-8; 
-    } 
-    
-   unpack((u8*)m_bitmapscrcol,temp);
-   ttemp=temp;tbitmap_image=VIDEOMEM;
-   if(m_bitmap_ox==255)
-    tbitmap_image+=(320-m_bitmap_w)/2/8;
-   else
-    tbitmap_image+=m_bitmap_ox/8;
-   if(m_bitmap_oy==255)
-    tbitmap_image+=(96-m_bitmap_h)/2*40;
-   else
-    tbitmap_image+=(m_bitmap_oy*40)/8;
-   ww=m_bitmap_w/8;
-   for(y=0;y<m_bitmap_h/8;y++)
-   {  
-    memcpy(tbitmap_image,ttemp,ww);
-    ttemp+=ww;
-    tbitmap_image+=SCREEN_W;
-   }
-
-   unpack((u8*)m_bitmapcol,temp);
-   ttemp=temp;tbitmap_image=video_colorram;
-   if(m_bitmap_ox==255)
-    tbitmap_image+=(320-m_bitmap_w)/2/8;
-   else
-    tbitmap_image+=m_bitmap_ox/8;
-   if(m_bitmap_oy==255)
-    tbitmap_image+=(96-m_bitmap_h)/2*40;
-   else
-    tbitmap_image+=(m_bitmap_oy*40)/8;
-   ww=m_bitmap_w/8;
-   for(y=0;y<m_bitmap_h/8;y++)
-   {
-    memcpy(tbitmap_image,ttemp,ww);
-    ttemp+=ww;
-    tbitmap_image+=SCREEN_W;
-   }
-   */
+  oxB=(320-m_bitmap_w)>>1;
+ oxC=oxB>>3;
+ wC=m_bitmap_w>>3;
+  
+ t1=m_bitmapcol;
+ t2=m_bitmapscrcol;
+ t3=m_bitmap;
+ 
+ ot1=video_colorram+oxC;
+ ot2=VIDEOMEM+oxC;
+ ot3=bitmap_image+oxB;
+ 
+ for(y=0;y<m_bitmap_h;y+=8)
+  {
+   memcpy(ot1,t1,wC);t1+=wC;ot1+=SCREEN_W;
+   memcpy(ot2,t2,wC);t2+=wC;ot2+=SCREEN_W;
+   memcpy(ot3,t3,m_bitmap_w);t3+=m_bitmap_w;ot3+=320;
   }
-
  
 }
 
-void IMAGE_clean()
+void ui_image_clean()
 {
  memset(VIDEOMEM,0,(96/8)*40);   
  memset(video_colorram,0,(96/8)*40); 
  memset(bitmap_image,0,4000);
- REFRESH  
+ 
 }
 
 void ui_room_update()
 {
- IMAGE_clean();
+ REFRESH
+ 
+ ui_image_clean();
  
  status_update(); 
  
@@ -504,9 +401,10 @@ void ui_room_update()
    m_bitmapscrcol=buf_bitmapscrcol;
    m_bitmapcol=buf_bitmapcol;
 
-   m_bitmap_ox=255;
-   m_bitmap_oy=255;
-   IMAGE_load();
+   m_bitmap_ox=buf_ox;
+   m_bitmap_oy=buf_oy;
+   
+   ui_image_draw();
   }
  
  if(rightactorimg!=meta_none)
@@ -519,7 +417,7 @@ void ui_room_update()
    m_bitmap_ox=8;
    m_bitmap_oy=8;*/
 
-   IMAGE_load();
+   ui_image_draw();
   }
  if(leftactorimg!=meta_none)
   {
@@ -531,6 +429,8 @@ void ui_room_update()
    m_bitmap_ox=320-itembitmap01_w-8;
    m_bitmap_oy=8;*/
 
-   IMAGE_load();
+   ui_image_draw();
   }
+  
+ REFRESH 
 }
