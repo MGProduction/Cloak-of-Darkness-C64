@@ -16,7 +16,7 @@
 // 
 // 
 
-include:adv_stdlib.yaml
+include:adv_stdlib.st64.txt
 
 verb:about
 	msg:\yCloak of Darkness \woriginal idea by \yRoger Firth\w.
