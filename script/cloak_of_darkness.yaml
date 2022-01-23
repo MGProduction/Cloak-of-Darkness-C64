@@ -1,0 +1,209 @@
+//
+//  This is my C64 IF engine script
+//
+//  of Cloak of Darkness (http://www.firthworks.com/roger/cloak/) 
+//
+//  There's a little more than the usual minimal handling but
+//  I've been as much as possible faithful to the original task
+//
+//  Not including gfx (and native player code) the compiled game 
+//  payload is about 4.5kb
+//
+//  This script is inspired by many things, but mainly by the first
+//  version of ALAN 
+//  
+//  Marco Giorgini (@marcogiorgin)
+// 
+// 
+
+include:adv_stdlib.yaml
+
+verb:about
+	msg:\yCloak of Darkness \woriginal idea by \yRoger Firth\w.
+		This C64 implementation has been created by \yMarco Giorgini
+
+obj:cloak
+	name:a black velvet cloak
+	attr:takeable+visible
+	desc:It is a handsome cloak, of velvet trimmed with satin, and slightly
+		spattered with raindrops. Its blackness is so deep that it almost 
+		seems to suck light from the room.
+	verb:examine
+		ifisroom:dark_bar
+			msg:It's pitch black here. You can't see a thing.
+	verb:take
+		ifobjin:$this,$here
+			putobj:$this,$inventory
+			ifobj:$this,hung
+				unsetobj:$this,hung			
+			setroomimage:cloakroom,png\cloakroom.png	
+			msg:Taken
+	verb:drop|put_down
+		ifisroom:dark_bar
+			msg:It's pitch black here. You can't see a thing.
+		else
+			ifobjin:cloak,$inventory					
+				ifisroom:cloakroom
+					putobj:cloak,cloakroom
+					setvar:$score,1
+					setroomimage:cloakroom,png\cloakroom3.png
+					msg:You drop you cloak on the floor
+				else
+					msg:This isn't the best place to leave a smart cloak lying around.
+			else
+				msg:You don't have the cloak with you anymore
+	verb:hang|put_on
+		ifisroom:dark_bar
+			msg:It's pitch black here. You can't see a thing.
+		else
+			ifisroom:cloakroom
+				ifobjin:cloak,$inventory					
+					putobj:cloak,cloakroom
+					setobj:cloak,hung
+					setvar:$score,2
+					setroomimage:cloakroom,png\cloakroom2.png
+					msg:You hang the cloak on the hook.
+				else
+					ifobj:cloak,hung
+						msg:The cloak is already hung up!
+					else
+						msg:You don't have the cloak with you anymore
+			else
+				msg:There is nowhere to hang the cloak around here!
+		
+	
+room:foyer
+	image:png\foyer.png
+	name:Foyer of the Opera House
+	desc:You are standing in a spacious hall, splendidly decorated in red and
+		gold, with glittering chandeliers overhead. The entrance from the
+		street is to the \ynorth\w, and there are doorways \ysouth\w and \ywest\w.
+	scenary:hall		
+		desc:The hall is spacious and splendidly decorated in red and gold.
+	scenaryobj:chandeliers|chandelier		
+		desc:They're overhead and glittering.
+	scenary:entrance		
+		desc:The entrance is to the north.
+	verb:s
+		ifobjin:cloak,$inventory
+			goto:dark_bar
+		else
+			goto:bar
+	verb:w
+		goto:cloakroom
+	verb:n
+		msg:You've only just arrived, and besides, the weather outside seems to
+			be getting worse.
+			
+room:cloakroom
+	image:png\cloakroom.png
+	name:Cloakroom
+	desc:The walls of this small room were clearly once lined with hooks,
+		though now only one remains. The exit is a door to the \yeast\w.		
+	verb:e
+		goto:foyer
+	scenary:door		
+		desc:It's the door leading back to the foyer.
+	scenary:wall|walls		
+		desc:The walls of this small room were clearly once lined with hooks,
+				though now only one remains.
+	scenary:hooks		
+		desc:There's only one of them.
+	scenaryobj:hook|peg
+		name:small brass hook		
+		verb:examine				
+			msg:It's just a small brass hook +
+			ifobj:cloak,hung
+				msg:with a cloak hanging on it.
+			else
+				msg:screwed to the wall.
+
+room:bar
+	image:png\foyerbar.png
+	name:Foyer Bar
+	desc:The bar, much rougher than you'd have guessed after the opulence of
+		the foyer to the north, is completely empty. There seems to be some
+		sort of message scrawled in the sawdust on the floor.		
+	verb:n
+		goto:foyer
+	scenaryobj:message|floor|sawdust
+		name:scrawled message		
+		verb:examine
+		verb:read
+			ifvar:damage_number,<,2
+				addvar:$score,1
+				msg:The message, neatly marked in the sawdust, reads...
+					\c
+					\c\y*** YOU HAVE WON ***
+					\c
+			else
+				msg:The message has been carelessly trampled, making it difficult to
+					read. You can just distinguish the words...
+					\c
+					\c\y*** YOU HAVE LOST ***			
+					\c
+			msg:Your current score is +
+			msg:$score
+			waitkey
+			msg:\c
+				Yes, I know, this game is really short, but it's been fun for me to play
+				with a classic while developing this little IF engine.
+				\c
+				Anyway...
+				...do you want to play again? (Y/N)
+			getkey
+			ifkey:Y
+				start
+			else
+				quit		
+		
+room:dark_bar
+	name:Darkness
+	desc:It's pitch black here. You can't see a thing.
+	verb:n
+		goto:foyer
+	verb:ne
+	verb:e
+	verb:se
+	verb:s
+	verb:sw
+	verb:ww
+	verb:nw
+		msg:Blundering around in the dark isn't a good idea!
+		addvar:damage_number,2
+	verb:inventory
+	verb:x
+	verb:wait
+	verb:read
+	verb:switch_on
+	verb:turn_on
+	verb:drop	
+	verb:pick_up
+	verb:drop
+	verb:take
+	verb:throw
+	verb:search
+		msg:In the dark? You could easily disturb something!
+		addvar:damage_number,1
+
+room:$start
+	image:png\cloakofdarkness.png
+	onfirst
+		msg:Hurrying through the rainswept November night, you're glad to see
+			the bright lights of the Opera House.
+			It's surprising that there aren't more people about but, hey, what
+			do you expect in a cheap demo game...?			
+		waitkey
+		clear
+		msg:\c\yCloak of Darkness
+			\c
+			\c\wA native text+gfx C64 implementation
+			\cby
+			\cMarco Giorgini
+			\c
+			\c\gVersion 1.1, January 2022
+		waitkey
+		clear
+		setvar:$topscore,3
+		putobj:cloak,$inventory
+		goto:foyer
