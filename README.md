@@ -5,6 +5,8 @@ A **Cloak of Darkness** implementation for C64 using my WIP Interactive Fiction 
 
 To build this game you need **CC65** (https://www.cc65.org/)
 
-A quick note: the compiled script code is inside **storytllr.h** (**storytllr.c** is the script player). Being still a WIP at the moment nor the compiler nor its documentation will be publicly available (sorry) but I think it could be in the future (at least in binary format).
+A couple of notes: 
+  - the compiled script code is inside **storytllr_data.h** (**include_storytllr.c** is the script player). Being still a WIP at the moment nor the compiler nor its documentation will be publicly available (sorry) but I think it could be in the future (at least in binary format).
+  - during the build in the makefile there's a call to a .bat file to add images to the final .d64 - you need to change that part if you are not using a Windows OS (to call a .sh instead)
 
 You can find the compiled game here (it may be an older versione, compared to script/code here): https://marcogiorgini.itch.io/cloak-of-darkness-c64
