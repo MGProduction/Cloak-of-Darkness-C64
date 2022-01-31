@@ -12,13 +12,26 @@
 
 #include "mgLib/mgLib.h"
 
+#define IMPLEMENT_C_HBUNPACK
+#include "mgLib/hupack.c"
+
 #if defined(WIN32)
 void __asm__(const char*cmd,...);
 char cgetc();
+#if defined(NDEBUG)
+#define basepath ""
+#else
+#define basepath "scripts/CloakOf/"
+#endif
 #endif
 
 #define AUDIO
 #define USE_DISK
+#define USE_FONT
+
+#define USE_HIMAGE
+
+//#define ONTHEFLYCLEAN
 
 #define REFRESH vic_wait_offscreen();
 
@@ -92,7 +105,4 @@ char cgetc();
 #define frameattr_overlay    0x10
 #define frameattr_colormark  0x0F
 
-#define end_level 255
-#define end_line  254
 
-#define page_end 255

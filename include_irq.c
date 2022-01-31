@@ -33,7 +33,7 @@ void IRQ_bitmapmode()
   __asm__("and #$f0   ; preserve the upper nybble, clear the lower nybble.");
   __asm__("ora #$08 ; add in the adjusted 1-bit parameter value.");
   __asm__("sta $d018  ; write the VIC-II pointer register.");
-  // video bank 1
+  // video bank 3
   __asm__("lda $dd02  ; read Port-A Data Direction register (CIA #2).");
   __asm__("ora #3     ; set the lowest two bits (outputs).");
   __asm__("sta $dd02  ; write Port-A Data Direction register (CIA #2).");
@@ -41,7 +41,7 @@ void IRQ_bitmapmode()
   __asm__("and #$fc   ; preserve the upper 6 bits, clear the lower 2.");
   __asm__("ora #0     ; add in the adjusted 2-bit parameter value.");
   __asm__("sta $dd00  ; write Port-A data register (CIA#2).");
-  // screen bank 1
+  // screen bank 12
   __asm__("lda $d018  ; read the VIC-II pointer register.");
   __asm__("and #$0f   ; preserve the low nybble, clear the high nybble.");
   __asm__("ora #$c0   ; add in the adjusted 4-bit parameter value.");
@@ -77,18 +77,28 @@ void do_textmode()
   __asm__("and #$f0   ; preserve the upper nybble, clear the lower nybble.");
   __asm__("ora #$06   ; add in the adjusted 1-bit parameter value.");
   __asm__("sta $d018  ; write the VIC-II pointer register.");
-  // video bank 0
+  // video bank 3
   __asm__("lda $dd02  ; read Port-A Data Direction register (CIA #2).");
   __asm__("ora #3     ; set the lowest two bits (outputs).");
   __asm__("sta $dd02  ; write Port-A Data Direction register (CIA #2).");
   __asm__("lda $dd00  ; read Port-A data register (CIA#2).");
   __asm__("and #$fc   ; preserve the upper 6 bits, clear the lower 2.");
-  __asm__("ora #3 ; add in the adjusted 2-bit parameter value.");
+#if defined(USE_FONT)    
+  __asm__("ora #0 ; add in the adjusted 2-bit parameter value."); // 3 
+#else
+  __asm__("ora #3 ; add in the adjusted 2-bit parameter value."); // 3 
+#endif
   __asm__("sta $dd00  ; write Port-A data register (CIA#2).");
   // screen bank 1
-  __asm__("lda $d018  ; read the VIC-II pointer register.");
+  __asm__("lda $d018  ; read the VIC-II pointer register.");  
+#if defined(USE_FONT)  
+  __asm__("and #$01   ; preserve the low nybble, clear the high nybble.");
+  __asm__("ora #$d0    ; add in the adjusted 4-bit parameter value."); // 1
+  __asm__("ora #$0e    ; charset ");
+#else
   __asm__("and #$0f   ; preserve the low nybble, clear the high nybble.");
-  __asm__("ora #16    ; add in the adjusted 4-bit parameter value.");
+  __asm__("ora #$10    ; add in the adjusted 4-bit parameter value."); // 1
+#endif  
   __asm__("sta $d018  ; write the VIC-II pointer register.");
 }
 

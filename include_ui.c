@@ -7,10 +7,129 @@ u8 blink;
 
 void scrollup()
 {
- REFRESH
- memmove(video_ram+text_ty*40,video_ram+(text_ty+1)*40,9*40);
- memmove(video_colorram+text_ty*40,video_colorram+(text_ty+1)*40,9*40);
+ REFRESH 
+ #if defined(WIN32)
+ memmove(video_ram+text_ty*40,video_ram+(text_ty+1)*40,9*40); 
  memset(video_ram+24*40,' ',40);
+ #else 
+ __asm__("lda $1");
+ __asm__("sta %v",ch);
+ __asm__("sei"); 
+ __asm__("and $fc");
+ __asm__("sta $1");
+ 
+ __asm__("ldx #40"); 
+ __asm__("scrollloop:"); 
+ __asm__("dex");
+ 
+ __asm__("lda %w,x",TTVIDEOMEM+(text_ty+0+1)*40);
+ __asm__("sta %w,x",TTVIDEOMEM+(text_ty+0)*40);
+ __asm__("lda %w,x",TTVIDEOMEM+(text_ty+1+1)*40);
+ __asm__("sta %w,x",TTVIDEOMEM+(text_ty+1)*40);
+ __asm__("lda %w,x",TTVIDEOMEM+(text_ty+2+1)*40);
+ __asm__("sta %w,x",TTVIDEOMEM+(text_ty+2)*40);
+ 
+ __asm__("lda %w,x",TTVIDEOMEM+(text_ty+3+1)*40);
+ __asm__("sta %w,x",TTVIDEOMEM+(text_ty+3)*40); 
+ __asm__("lda %w,x",TTVIDEOMEM+(text_ty+4+1)*40);
+ __asm__("sta %w,x",TTVIDEOMEM+(text_ty+4)*40);
+ __asm__("lda %w,x",TTVIDEOMEM+(text_ty+5+1)*40);
+ __asm__("sta %w,x",TTVIDEOMEM+(text_ty+5)*40);
+ 
+ __asm__("lda %w,x",TTVIDEOMEM+(text_ty+6+1)*40);
+ __asm__("sta %w,x",TTVIDEOMEM+(text_ty+6)*40);
+ __asm__("lda %w,x",TTVIDEOMEM+(text_ty+7+1)*40);
+ __asm__("sta %w,x",TTVIDEOMEM+(text_ty+7)*40); 
+ __asm__("lda %w,x",TTVIDEOMEM+(text_ty+8+1)*40);
+ __asm__("sta %w,x",TTVIDEOMEM+(text_ty+8)*40); 
+ 
+ //__asm__("inx");
+ __asm__("cpx #0");
+ __asm__("bne scrollloop");  
+
+ __asm__("lda %v",ch);
+ __asm__("sta $1");
+ __asm__("cli");
+ 
+ __asm__("lda #32");
+ __asm__("ldx #39"); 
+ __asm__("scrollloop2:"); 
+ __asm__("dex"); 
+ __asm__("sta %w,x",TTVIDEOMEM+24*40);
+ __asm__("cpx #0");
+ __asm__("bne scrollloop2");  
+ 
+ #endif
+ memmove(video_colorram+text_ty*40,video_colorram+(text_ty+1)*40,9*40); 
+}
+
+u16 ii,ll,spl,align=0;
+
+void ui_clear()
+{
+ text_y=0,text_x=0;al=0;
+ if(clearfull)
+  {
+   memset(TVIDEOMEM+status_y*40,' ',SCREEN_W);
+   memset(video_colorram+status_y*40,0,SCREEN_W);
+   clearfull=0;
+  }
+ memset(TVIDEOMEM+TVIDEORAM_OFFSET,' ',TVIDEORAM_SIZE);
+ memset(video_colorram+TVIDEORAM_OFFSET,0,TVIDEORAM_SIZE);
+}
+
+#define ALIGN_LEFT   0
+#define ALIGN_RIGHT  1
+#define ALIGN_CENTER 2
+
+u8 _pch,b_bch,_ech,_cpl[2],_buffer[SCREEN_W+2],_cbuffer[SCREEN_W+2];
+u8*btxt;
+
+void _savechpos()
+{
+ btxt=txt;
+ b_bch=_bch;
+}
+void _restorechpos()
+{
+ txt=btxt;
+ _bch=b_bch;
+}
+void _getnextch()
+{
+ _pch=_ch;
+ #if defined(packed_strings)
+  if(_ech)
+   {
+    _ch=_ech;
+    _ech=0;
+   }
+  else  
+  if(_bch)
+   {
+    _ch=_bch;
+    _bch=0;
+   }  
+  else
+   if(txt==etxt)
+    _ch=0;
+   else     
+    {
+     _ch=*txt++;
+     if(_ch&0x80)
+      {
+       _ch=_ch&0x7f;
+       memcpy(_cpl,packdata+(_ch<<1),2);
+       _ch=_cpl[0];
+       _bch=_cpl[1];
+      }
+    }  
+ #else
+ if(txt==etxt)
+  _ch=0;
+ else  
+  _ch=*txt++;
+ #endif
 }
 
 void cr()
@@ -25,93 +144,57 @@ void cr()
   }
 }
 
-void ui_clear()
-{
- text_y=0,text_x=0;
- if(clearfull)
-  {
-   memset(video_ram+status_y*40,' ',(SCREEN_H-status_y)*40);
-   memset(video_colorram+status_y*40,0,(SCREEN_H-status_y)*40);
-   clearfull=0;
-  }
- else
-  {
-  memset(video_ram+text_ty*40,' ',(SCREEN_H-text_ty-1)*40);
-  memset(video_colorram+text_ty*40,0,(SCREEN_H-text_ty-1)*40);
-  }
-}
-
 void core_cr()
 {
  REFRESH
  txt_x=0;
  txt_y++;
- if((*txt==' ')||(*txt==FAKE_CARRIAGECR)) txt++; 
+ if((_ch==' ')||(_ch==FAKE_CARRIAGECR)) 
+  _getnextch();
  if(txt_y>=SCREEN_H)
  {
   scrollup();
   txt_y--;
  }
+ al++;
 }
 
-#define ALIGN_LEFT   0
-#define ALIGN_RIGHT  1
-#define ALIGN_CENTER 2
+u8 v,u;
 
-u16 al,ii,ll,sp,spl,align=0;
 void core_drawtext()
-{ 
-  al=0;
-  while(*txt)
-   {
-    u8 c=*txt;
-    if(c==FAKE_CARRIAGECR)
+{  
+  _getnextch();
+  while(_ch)
+   {        
+    if(al+1>=text_stoprange) 
      {
-      txt++;
-      core_cr();al++;
+      _ech=_ch;     
+      return;
+     }
+    if(_ch==FAKE_CARRIAGECR)
+     {
+      core_cr();
+      _getnextch();
      }
     else
      {
-      align=ALIGN_LEFT;spl=sp=ii=0;
-      ll=txt_x;
-      while(txt[ii]&&(ll<SCREEN_W)&&(txt[ii]!=FAKE_CARRIAGECR))
+      align=ALIGN_LEFT;spl=ll=0;
+      while(_ch&&(ll+txt_x<SCREEN_W)&&(_ch!=FAKE_CARRIAGECR))
       {
-       if(txt[ii]==ESCAPE_CHAR)
+       if(_ch==ESCAPE_CHAR)
         {
-         ii++;
-         if(txt[ii]==3)
+         _getnextch();
+         switch(_ch)
+         {
+         case 'c'-'a'+1:
           align=ALIGN_CENTER;
-         ii++;
-        }
-       else
-        {
-        if(txt[ii]==' ')
-         {
-          sp=ii;
-          spl=ll;
-         }
-        ii++;ll++;
-        }
-      }
-      if(ll>=SCREEN_W)
-       {ii=sp;ll=spl;}
-      switch(align)
-       {
-       case ALIGN_CENTER:
-         txt_x+=(SCREEN_W-ll)>>1;
-        break;
-        case ALIGN_RIGHT:
-         txt_x+=(SCREEN_W-ll);
-        break;
-       }
-      while(ii--)
-       {
-        c=*txt++;
-        if(c==ESCAPE_CHAR)
-        {
-         c=*txt++;
-         switch(c)
-         {
+         break; 
+         case 'r'-'a'+1:
+          align=ALIGN_RIGHT;
+         break; 
+         case 'l'-'a'+1:
+          align=ALIGN_LEFT;
+         break; 
          case 'g'-'a'+1:
           txt_col=COLOR_GRAY2;
           break;
@@ -121,26 +204,56 @@ void core_drawtext()
          case 'w'-'a'+1:
           txt_col=COLOR_WHITE;
           break;
+          case 'V'-'A'+65:
+           u=1;
+          case 'v'-'a'+1:
+           v=0;
+           while(vrb[v])
+            {
+             _buffer[ll]=vrb[v]+txt_rev;
+             if(u)
+              {_buffer[ll]+=64;u=0;}
+             _cbuffer[ll]=txt_col; 
+             ll++;v++;
+            }
+          break;
          }
-         ii--;
+         _getnextch();
         }
-        else
+       else
+        {
+        if(_ch==' ')
          {
-         video_colorram[txt_y*40+txt_x]=txt_col;                         
-         video_ram[txt_y*40+txt_x]=c+txt_rev;
-         txt_x++;
+          spl=ll;
+          _savechpos();
          }
-      }     
-     c=*txt;
-     if(c==0)
-      break;
-     else
-     {
-      core_cr();
-      al++;
-     }
-     if(al>=8)
-      return;
+        _buffer[ll]=_ch+txt_rev;_cbuffer[ll]=txt_col; 
+        ll++;
+        _getnextch();
+        }
+      }
+      if(ll+txt_x>=SCREEN_W)
+       {
+        _restorechpos();
+        ll=spl;
+        _getnextch(); 
+       }
+      switch(align)
+       {
+       case ALIGN_CENTER:
+         txt_x+=(SCREEN_W-ll)>>1;
+        break;
+        case ALIGN_RIGHT:
+         txt_x+=(SCREEN_W-ll);
+        break;
+       }
+      memcpy(video_ram+txt_y*40+txt_x,_buffer,ll);
+      memcpy(video_colorram+txt_y*40+txt_x,_cbuffer,ll);
+      txt_x+=ll;      
+      if(_ch==0)
+       break;
+      else
+       core_cr();           
     }
   }
 }
@@ -156,7 +269,7 @@ void status_update()
   {
   memset(video_colorram+status_y*40,COLOR_YELLOW,40);
   memset(video_ram+status_y*40,160,40);
-  txt_col=COLOR_YELLOW;txt_rev=128;txt_x=0;txt_y=status_y;
+  al=0;txt_col=COLOR_YELLOW;txt_rev=128;txt_x=0;txt_y=status_y;
   core_drawtext();
   }
 }
@@ -177,7 +290,7 @@ void do_blink()
    else
     ch=COLOR_BLACK;
    video_colorram[txt_y*40+(txt_x)]=ch;
-   video_ram[txt_y*40+(txt_x)]=100;
+   video_ram[txt_y*40+(txt_x)]=108;
    blink=0;
   }
 }
@@ -201,27 +314,22 @@ char charmap(char c)
      else
       if(c==',')
        c=44;
-      else
-      if(c=='>')
-      c=62;
-     else
-      if(c=='_')
-       c=100;
-      else
-       c=c;
+      else      
+       c=0;
  return c;
 }
 
 void parser_update()
 {  
  txt=">";
- txt_col=COLOR_GRAY2;txt_rev=0;txt_x=0;txt_y=text_ty+text_y;
+ al=0;txt_col=COLOR_GRAY2;txt_rev=0;txt_x=0;txt_y=text_ty+text_y;
  core_drawtext();
  txt=strcmd;
  txt_col=COLOR_GRAY2;
  core_drawtext(); 
  video_colorram[txt_y*40+txt_x]=COLOR_BLACK;                         
  video_ram[txt_y*40+txt_x]=' ';
+ al=0;
  REFRESH
 }
 
@@ -266,12 +374,13 @@ void ui_waitkey()
   video_ram[24*40+ll]=' ';
   ll++;
   }
+ al=0; 
 }
 
 void ui_text_write(u8*text)
-{
+{ 
  txt=text;
- txt_col=COLOR_WHITE;
+ txt_col=COLOR_WHITE; 
  if(text_attach)
   text_attach=0;
  else
@@ -279,9 +388,9 @@ void ui_text_write(u8*text)
    txt_rev=0;txt_x=0;txt_y=text_ty+text_y;
   }
  while(1)
-  {
+  {  
   core_drawtext();
-  if(*txt==0)
+  if(_ch==0)
    {
    if(txt[-1]=='+')
     {text_attach=1;if(txt_x) txt_x--;}
@@ -295,6 +404,7 @@ void ui_text_write(u8*text)
   else
    ui_waitkey();
   }  
+ al++; 
 }
 
 void room_load()
@@ -349,7 +459,17 @@ void IMAGE_clear()
 }
 
 u8*t1,*t2,*t3,*ot1,*ot2,*ot3;
-u16 wC,oxC,oxB;
+u16 wC,wwC,oxC,oxB;
+
+void bytemem()
+{
+ hunpack(t1,ADDR(0xC000));
+ t1=ADDR(0xC000);
+ if(oxC)
+  ot1+=oxC;
+ for(y=0;y<m_bitmap_h;y+=8) 
+  {memcpy(ot1,t1,wC);t1+=wC;ot1+=wwC;}
+}
 
 void ui_image_draw()
 { 
@@ -357,24 +477,56 @@ void ui_image_draw()
   oxB=m_bitmap_ox+(m_bitmap_oy>>3)*320;
  else
   oxB=(320-m_bitmap_w)>>1;
+ 
  oxC=oxB>>3;
- wC=m_bitmap_w>>3;
-  
+ wC=m_bitmap_w>>3;wwC=SCREEN_W;
  t1=m_bitmapcol;
+ ot1=video_colorram;
+ bytemem();
+ t1=m_bitmapscrcol;
+ ot1=VIDEOMEM;
+ bytemem();
+ 
+ oxC=oxB;
+ wC=m_bitmap_w;wwC=320;
+ t1=m_bitmap;
+ ot1=bitmap_image;
+ bytemem();
+  
+ 
  t2=m_bitmapscrcol;
  t3=m_bitmap;
- 
- ot1=video_colorram+oxC;
- ot2=VIDEOMEM+oxC;
- ot3=bitmap_image+oxB;
+  
+ ot1=video_colorram;
+ ot2=VIDEOMEM;
+ ot3=bitmap_image;
+ /*
+ if(oxC)
+  {
+#if defined(ONTHEFLYCLEAN)  
+   memset(ot1,0,oxC);
+   memset(ot2,0,oxC);
+#endif   
+   ot1+=oxC;
+   ot2+=oxC;
+   ot3+=oxB;
+  }
  
  for(y=0;y<m_bitmap_h;y+=8)
   {
-   memcpy(ot1,t1,wC);t1+=wC;ot1+=SCREEN_W;
-   memcpy(ot2,t2,wC);t2+=wC;ot2+=SCREEN_W;
+   memcpy(ot1,t1,wC);t1+=wC;ot1+=wC;
+#if defined(ONTHEFLYCLEAN)     
+   memset(ot1,0,oxC<<1);
+#endif   
+   ot1+=oxC<<1;
+   memcpy(ot2,t2,wC);t2+=wC;ot2+=wC;
+#if defined(ONTHEFLYCLEAN)     
+   memset(ot2,0,oxC<<1);
+#endif   
+   ot2+=oxC<<1;
    memcpy(ot3,t3,m_bitmap_w);t3+=m_bitmap_w;ot3+=320;
   }
- 
+ */
 }
 
 void ui_image_clean()
@@ -385,24 +537,31 @@ void ui_image_clean()
  
 }
 
-void ui_room_update()
+void ui_room_update_start()
 {
  REFRESH
  
+ #if !defined(ONTHEFLYCLEAN)  
  ui_image_clean();
+ #endif
  
  status_update(); 
- 
- if(buf_w&&buf_h)
-  {
-   m_bitmap_w=buf_w;
-   m_bitmap_h=buf_h;
-   m_bitmap=buf_bitmap;
-   m_bitmapscrcol=buf_bitmapscrcol;
-   m_bitmapcol=buf_bitmapcol;
+}
 
-   m_bitmap_ox=buf_ox;
-   m_bitmap_oy=buf_oy;
+
+void ui_room_update()
+{
+ REFRESH
+ if(imagemem)
+  {
+   m_bitmap_w=*(u16*)(imagemem+0);   
+   m_bitmap_h=*(u8*)(imagemem+2);
+   m_bitmap_oy=*(u8*)(imagemem+5);
+   m_bitmap_ox=*(u16*)(imagemem+3);
+      
+   m_bitmapscrcol=imagemem+14+*(u16*)(imagemem+8);
+   m_bitmapcol=imagemem+14+*(u16*)(imagemem+10);
+   m_bitmap=imagemem+14+*(u16*)(imagemem+12);
    
    ui_image_draw();
   }
@@ -431,6 +590,5 @@ void ui_room_update()
 
    ui_image_draw();
   }
-  
- REFRESH 
+   
 }

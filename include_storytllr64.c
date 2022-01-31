@@ -30,6 +30,22 @@
 // -----------------------------
 #include "storytllr64_data.h"
 
+// -----------------------------
+// ui coordinates
+// -----------------------------
+
+#define split_y 96
+#define status_y ((split_y/8)+1+1)
+#define text_ty  (status_y+1)
+#define text_stoprange (SCREEN_H-text_ty-1)
+
+#define TVIDEORAM_OFFSET (text_ty*40)
+#define TVIDEORAM_SIZE   (1000-TVIDEORAM_OFFSET)
+
+// -----------------------------
+// special characters
+// -----------------------------
+
 #define FAKE_CARRIAGECR 31
 #define ESCAPE_CHAR     92
 
@@ -41,9 +57,10 @@
 // if I can avoid them to optimize
 // CC65 work
 // -----------------------------
-u8*txt;
+u8*txt,*etxt;
 u8 txt_x,txt_y,txt_col,txt_rev,txt_wrap;
 u8 text_y=0,text_x=0;
+u8 _ch,_bch,al;
 // -----------------------------
 u8 room=meta_nowhere,nextroom=meta_nowhere,newroom,quit_request=0,text_attach;
 u8 rightactorimg=meta_none,leftactorimg=meta_none;
@@ -52,8 +69,9 @@ u8 cmd,obj1,obj2;
 u8 clearfull;
 u8*str,*ostr,*strcmds;
 u8 strid,_strid;
-u8 ch;
-u16 i,j,ii;
+u8 ch,imageid;
+u8*imagemem;
+u16 i,j,ii,freemem;
 u8 cmdid,fail,opcode,var,varobj,varroom,varvalue,varattr,saved;
 // -----------------------------
 u8  ch,key,len,istack=0,thisobj,used;
@@ -69,7 +87,8 @@ u8  ormask[8]={1,2,4,8,16,32,64,128},
 // PROTOTYPES
 // -----------------------------
 void room_load();
-void os_roomimage_load();;
+void os_roomimage_load();
+void os_core_roomimage_load();
 void core_drawtext();
 void cr();
 void ui_text_write(u8*text);
@@ -98,40 +117,24 @@ void _getstring()
  ostr=str;
  while(_strid<strid)
  {
-  len=*str++;
-  str+=len;
+  len=*str++;  
+  if(len==255)
+   {
+    len=*str++;
+    str+=255;
+   } 
+  str+=len; 
   _strid++;
   ostr=str;
  } 
-#if defined(packed_strings)
- ii=0;
- len=*ostr++; 
- while(len--)
-  {
-   ch=*ostr++;
-   if(ch&0x80)
-    {
-#if defined(USE3F)    
-     key=ch&0x3f;
-     len=packpos[key+1]-packpos[key];
-     if(ch&0x40)
-      tmp[ii++]=' ';
-     memcpy(tmp+ii,packdata+packpos[key],len);
-     ii+=len;
-     if(ch&0x40)
-      tmp[ii++]=' ';
-#else
-     key=ch&0x7f;
-     memcpy(tmp+ii,packdata+(key<<1),2);
-     ii+=2;
-#endif      
-    }
-   else
-    tmp[ii++]=ch;
-  }
- tmp[ii]=0; 
- ostr=tmp; 
-#endif
+len=*ostr++; 
+etxt=ostr+len;
+if(len==255)
+ {
+  len=*ostr++; 
+  etxt+=1+len;
+ }
+_bch=0;
 }
 
 void _findstring()
@@ -156,8 +159,8 @@ void _findstring()
 
 void draw_roomobj()
 {
- u8 i,k,j,c; 
- txt=tmp2;
+ u8 i,k,c; 
+ al=0;txt=tmp2;
  for(k=c=i=0;i<obj_count;i++)
   if(objloc[i]==varroom)
    if((objattr[i]&varattr)==varattr)
@@ -169,15 +172,14 @@ void draw_roomobj()
       { 
        str=advnames;     
        _getstring();
-       j=0;
        k=0;
        if(c)
         {
          txt[k++]=',';
          txt[k++]=' ';
         }
-       while(ostr[j])
-        txt[k++]=ostr[j++];
+       while(ostr<etxt)
+        txt[k++]=*ostr++;
        txt[k]=0;
        txt_col=COLOR_WHITE;
        core_drawtext();
@@ -291,6 +293,11 @@ void adv_exec()
       saved++;
      break;
      case op_dbg:
+      {       
+       itoa(freemem,tmp,10);       
+       ostr=tmp;
+       ui_text_write(ostr);       
+      }
      break;
      case op_clear:
       ui_clear();
@@ -329,6 +336,7 @@ void adv_exec()
       _getroom();
       var=pcode[i++];
       //roomimg[varroom]=var;
+      roomovrimg[varroom]=var;
       os_roomimage_load();
      break;
      case op_setroomimage:
@@ -455,8 +463,11 @@ void adv_exec()
       case op_withobj:
        thisobj=var=pcode[i++];
        if(var!=obj1)
-        if((var==meta_unknown)&&(obj1==meta_none))
+        if(obj1==meta_none)
+         if(var==meta_unknown)        
           ;
+         else 
+          fail=2;
         else
          if(var==meta_every)
           thisobj=obj1;
@@ -617,7 +628,10 @@ void adv_parse()
   if(cmdid!=255)
    {
     if(cmd==meta_unknown)
-     cmd=cmdid;
+     {
+      cmd=cmdid;
+      strncpy(vrb,tmp,VRBLEN-1);
+     } 
     else
      if((obj1==meta_none)||(obj1==meta_unknown))
       obj1=cmdid;
@@ -645,7 +659,7 @@ void adv_parse()
 
 void adv_reset()
 {
- unpack(origram,objnameid);
+ hunpack(origram,objnameid);
 }
 
 void adv_load()

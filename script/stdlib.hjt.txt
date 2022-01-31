@@ -1,0 +1,116 @@
+objclass:scenery
+	attr:visible
+objclass:sceneryobj
+	attr:visible+listable
+objclass:normalobj
+	attr:visible+takeable+listable
+objclass:actor
+	attr:actor+visible+listable
+verbclass:genericverb
+	withobj:$none
+		msg:\V what?
+	withobj:$unknown
+		msg:You don't see that
+	withobj:$every
+		ifobjin:$this,$inventory
+			msg:You don't find a reason to do that
+		else
+			ifobjin:$this,$here
+				msg:You don't find a reason to do that
+			else
+				msg:You don't see it here	
+verbclass:movementverb
+	msg:You can't go that way
+movementverb:up|go_up
+movementverb:down|go_down
+movementverb:s|south|go_south
+movementverb:n|north|go_north
+movementverb:w|west|go_west
+movementverb:e|east|go_east
+movementverb:se|southest|south-east|go_southeast
+movementverb:sw|southwest|south-west|go_southwest
+movementverb:ne|northeast|north-east|go_northeast
+movementverb:nw|nortwest|north-west|go_northwest
+genericverb:x|examine|look|l|look_at
+	withobj:$none
+		msg:$roomdesc
+		ifobjinattr:$any,$here,visible+listable
+			msg:You notice: +
+			listobjin:$here,visible+listable
+	withobj:$every
+		ifobjin:$this,$inventory
+			msg:$objdesc
+		else
+			ifobjinattr:$this,$here,visible
+				msg:$objdesc
+			else
+				msg:You don't see that here
+genericverb:take|get|pick
+	withobj:$every
+		ifobjin:$this,$here
+			ifobj:$this,takeable+visible
+				putobj:$this,$inventory
+				msg:Taken
+			else
+				msg:You don't want to take it
+		else
+			ifobjin:$this,$inventory
+				msg:You already have it
+			else
+				msg:You don't see it here
+genericverb:drop|put_down
+	withobj:$every
+		ifobjin:$this,$inventory
+			ifobj:$this,takeable+visible
+				putobj:$this,$here
+				msg:Dropped
+			else
+				msg:You can't drop it
+		else
+			msg:You don't have it
+genericverb:use
+genericverb:push
+genericverb:pull
+genericverb:open
+genericverb:close
+genericverb:lock
+genericverb:unlock
+verb:$unknown
+	msg:You think that's not a wise idea
+verb:onfirst
+verb:onenter
+	clear
+	msg:$roomdesc
+verb:help|h
+	msg:In this kind of games you can do actions simply writing short commands in \yVERB+OBJECT \wform.
+	msg:With them you can \yEXAMINE \welements, \yTAKE \wor \yDROP \witems and so on.
+	msg:There are also special commands like \yINVENTORY \wthat will show what you're carrying with you.
+verb:inventory|i
+	ifobjinattr:$any,$inventory,takeable
+		msg:You are carrying: +
+		listobjin:$inventory,takeable
+	else
+		msg:You aren't carrying anything.
+verb:score
+	msg:Your current score is +
+	msg:$score
+verb:quit|q
+	msg:Are you sure? (Y/N)
+	getkey
+	ifkey:Y
+		quit
+verb:restart
+	msg:Are you sure? (Y/N)
+	getkey
+	ifkey:Y
+		start
+verb:save
+	save
+	msg:Done
+verb:load
+	msg:Are you sure? (Y/N)
+	getkey
+	ifkey:Y
+		load
+verb:mem
+	dbg
